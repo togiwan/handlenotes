@@ -2,12 +2,16 @@
 
 HandleNotes is a Chrome extension for leaving private notes on accounts you see on X. The note button sits beside the account name and shows how many active notes you’ve saved. Keep multiple notes per account, link back to posts, add tags, and organize notes in the archive or Trash.
 
+![HandleNotes showing a sample note on a public X post](docs/screenshots/handlenotes-on-x.jpg)
+
+The screenshot shows HandleNotes on a public NASA post with a sample note. [View the original post](https://x.com/NASA/status/2121280846183137564)
+
 ## Install locally
 
-1. Open `chrome://extensions` in Chrome.
-2. Turn on **Developer mode** and select **Load unpacked**.
-3. Select this project’s `extension` folder and refresh your open X tabs.
-4. Use the note button beside an account on X or open HandleNotes from the Chrome toolbar.
+1. Download and extract the ZIP from the [latest GitHub release](https://github.com/togiwan/handlenotes/releases/latest).
+2. Open `chrome://extensions` in Chrome. Turn on **Developer mode** and select **Load unpacked**.
+3. Select the extracted folder containing `manifest.json`. If you are working from a Git checkout, select the `extension` folder.
+4. Refresh open X tabs. Use the note button beside an account or open HandleNotes from the Chrome toolbar.
 
 ## Use HandleNotes
 
