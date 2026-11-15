@@ -1,0 +1,12 @@
+:has(> xbellek-button) {
+  display: flex !important;
+  flex-flow: row nowrap !important;
+  align-items: center !important;
+}
+
+xbellek-button {
+  display: inline-flex !important;
+  flex: 0 0 auto !important;
+  margin-inline-end: 4px !important;
+  line-height: 1;
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.DS_Store
+*.zip
+*yedek*.json
+*backup*.json
+.env*
+test-results/
+__pycache__/
+*.pyc
+/AGENTS.md
+/PROJECT_CONTEXT.md
