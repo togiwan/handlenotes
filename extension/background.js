@@ -19,7 +19,7 @@ async function read() {
       typeof state.settings.reminders !== 'boolean' ||
       !Number.isSafeInteger(state.lastExportRevision) || state.lastExportRevision < -1 || state.lastExportRevision > state.revision ||
       !(state.lastExportAt === null || (typeof state.lastExportAt === 'string' && Number.isFinite(Date.parse(state.lastExportAt))))) {
-    throw new Error('Kayıt verisi geçersiz veya desteklenmiyor. Mevcut kayıt korundu; boş liste oluşturulmadı.');
+    throw new Error('Saved data is invalid or unsupported. Your existing data was left intact.');
   }
   return state;
 }
@@ -35,26 +35,26 @@ function trusted(sender) {
   return sender.id === chrome.runtime.id && sender.url?.startsWith(chrome.runtime.getURL('pages/'));
 }
 async function handle(message, sender) {
-  if (!message || message.channel !== 'x-bellek') throw new Error('Geçersiz istek.');
-  if (sender.id !== chrome.runtime.id) throw new Error('İzin verilmeyen kaynak.');
+  if (!message || message.channel !== 'x-bellek') throw new Error('Invalid request.');
+  if (sender.id !== chrome.runtime.id) throw new Error('Request from an unauthorized source.');
   if (message.op === 'lookup') {
     const state = await read();
-    if (!Array.isArray(message.authors) || message.authors.length > 1000) throw new Error('Hesap listesi geçersiz.');
+    if (!Array.isArray(message.authors) || message.authors.length > 1000) throw new Error('Invalid account list.');
     return message.authors.map(ref => {
       const a = resolveAuthor(state, ref.username);
       return { username: ref.username, count: a?.notes.filter(n => noteStatus(n) === 'active').length || 0, color: a?.color || 'green' };
     });
   }
-  if (!trusted(sender)) throw new Error('Bu işlem yalnızca eklenti ekranından yapılabilir.');
+  if (!trusted(sender)) throw new Error('You can only do this from the extension.');
   const state = await read();
   if (message.op === 'get') return state;
   let next;
   let result = null;
   if (message.op === 'import' || message.op === 'previewImport') {
-    if (JSON.stringify(message.backup).length > MAX_IMPORT_BYTES) throw new Error('Yedek en fazla 20 MB olabilir.');
+    if (JSON.stringify(message.backup).length > MAX_IMPORT_BYTES) throw new Error('Backups must be 20 MB or smaller.');
     const merged = importBackup(state, message.backup, message.mode);
     if (message.op === 'previewImport') return { ...merged.report, revision: state.revision };
-    if (message.expectedRevision !== state.revision) throw new Error('Kayıtlar önizlemeden sonra değişti. Dosyayı yeniden seçip önizlemeyi kontrol et.');
+    if (message.expectedRevision !== state.revision) throw new Error('Your notes changed after the preview. Select the file again and review the updated preview.');
     next = merged.state; result = merged.report;
   } else next = mutate(state, message.op, message.payload || {});
   await chrome.storage.local.set({ [KEY]: next });
@@ -66,6 +66,6 @@ chrome.runtime.onMessage.addListener((message, sender, respond) => {
   // Serial queue protects all read-modify-write operations across popup / iframe / tabs.
   const work = queue.then(() => handle(message, sender));
   queue = work.catch(() => {});
-  work.then(value => respond({ ok: true, value }), error => respond({ ok: false, error: /quota|QUOTA|bytes/i.test(error.message) ? 'Depolama alanı doldu. Önce JSON yedeği al; son değişiklik kaydedilmedi.' : error.message }));
+  work.then(value => respond({ ok: true, value }), error => respond({ ok: false, error: /quota|QUOTA|bytes/i.test(error.message) ? 'Storage is full. Your last change was not saved. Export a JSON backup before making room.' : error.message }));
   return true;
 });

@@ -53,7 +53,7 @@
       found.set(slot, {
         username,
         source: permalink ? `https://x.com/${username}/status/${permalink[2]}` : '',
-        title: permalink ? `@${username} · X gönderisi` : ''
+        title: permalink ? `@${username} · X post` : ''
       });
     }
     const profile = profileRoute.exec(location.pathname)?.[1].toLowerCase();
@@ -109,10 +109,10 @@
     anchor = host;
     preferredHeight = 400;
     overlay = document.createElement('xbellek-panel');
-    overlay.style.cssText = 'position:fixed;z-index:2147483647;display:block;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px #162b2020,0 24px 64px #162b203c;border:1px solid #74887560;color-scheme:light dark';
+    overlay.style.cssText = 'position:fixed;z-index:2147483647;display:block;border-radius:16px;overflow:hidden;box-shadow:0 8px 24px #0f141920,0 24px 64px #0f14193c;border:1px solid #77859170;color-scheme:light dark';
     const shadow = overlay.attachShadow({ mode: 'open' });
     frame = document.createElement('iframe');
-    frame.title = `@${ref.username} için kişisel notlar`;
+    frame.title = `Private notes for @${ref.username}`;
     frame.style.cssText = 'display:block;width:100%;height:100%;border:0;background:#fff';
     const url = new URL(chrome.runtime.getURL('pages/app.html'));
     url.searchParams.set('panel', ref.username);
@@ -130,15 +130,15 @@
     const shadow = host.attachShadow({ mode: 'open' });
     const style = document.createElement('style');
     style.textContent = `
-      button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:3px;height:20px;min-width:20px;border:1px solid transparent;border-radius:6px;padding:2px 4px;background:transparent;color:#717c8d;cursor:pointer;font:500 10px system-ui,sans-serif}
-      svg{width:13px;height:13px;flex:none}
-      button:hover{background:#edf3fb;color:#3e6999;border-color:#c8dbe9}
-      button:focus-visible{outline:2px solid #3e6999;outline-offset:2px}
+      button{box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;gap:3px;height:20px;min-width:20px;border:1px solid transparent;border-radius:6px;padding:2px 4px;background:transparent;color:#717c87;cursor:pointer;font:500 10px system-ui,sans-serif}
+      svg{width:14px;height:14px;flex:none}
+      button:hover{background:#eff3f4;color:#0f1419;border-color:#cfd9de}
+      button:focus-visible{outline:2px solid #166da8;outline-offset:2px}
       button.saved{background:var(--bg);color:var(--fg);border-color:color-mix(in srgb,var(--fg) 20%,transparent)}
     `;
     const button = document.createElement('button');
     button.type = 'button';
-    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-7-4-7 4V3Z"/><path d="M9 8h6m-6 4h4"/></svg>';
+    button.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h9l5 5v13H5V3Zm9 0v5h5m-10 3 6 6m0-6-6 6"/></svg>';
     button.addEventListener('click', event => {
       event.preventDefault();
       event.stopPropagation();
@@ -153,7 +153,7 @@
   }
 
   function label(button, username, count = 0) {
-    button.title = count ? `@${username} için ${count} notu göster` : `@${username} için not ekle`;
+    button.title = count ? `Show ${count} ${count === 1 ? 'note' : 'notes'} for @${username}` : `Add a note for @${username}`;
     button.setAttribute('aria-label', button.title);
   }
 
@@ -206,7 +206,7 @@
         label(button, ref.username, count);
       }
     } catch {
-      for (const { button } of buttons.values()) button.title = 'XBellek’e ulaşılamadı. Sayfayı yenileyip tekrar dene.';
+      for (const { button } of buttons.values()) button.title = 'Could not reach HandleNotes. Refresh the page and try again.';
     } finally {
       refreshing = false;
       if (refreshAgain) { refreshAgain = false; void refresh(); }

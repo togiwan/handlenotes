@@ -1,8 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "XBellek",
-  "version": "0.1.0",
-  "description": "X hesapları için kişisel notlar. Yerel kayıt, etiketler, çöp kutusu ve JSON yedekleme.",
+  "name": "HandleNotes — Private Notes for X",
+  "short_name": "HandleNotes",
+  "version": "0.1.1",
+  "description": "Add private notes to X accounts. Tag, archive, and back them up locally.",
   "minimum_chrome_version": "114",
   "permissions": [
     "storage"
@@ -12,7 +13,7 @@
     "type": "module"
   },
   "action": {
-    "default_title": "XBellek",
+    "default_title": "HandleNotes",
     "default_popup": "pages/popup.html",
     "default_icon": {
       "16": "icons/16.png",

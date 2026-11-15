@@ -36,21 +36,21 @@ test('a successful save is acknowledged only after persistent storage completes'
   const release=new Promise(resolve=>unlock=resolve);
   writeBarrier={started:entered,release};
   let acknowledged=false;
-  const response=call('add',{payload:{username:'kalicilik_test',text:'Yazma bitmeden başarı dönmemeli'}}).then(r=>{acknowledged=true;return r;});
+  const response=call('add',{payload:{username:'kalicilik_test',text:'Acknowledge only after saving'}}).then(r=>{acknowledged=true;return r;});
   try{
     await started;
     assert.equal(acknowledged,false);
     assert.deepEqual(storage,before);
     unlock();
     assert.equal((await response).ok,true);
-    assert.equal(storage['x-bellek-v1'].authors.find(a=>a.username==='kalicilik_test').notes[0].text,'Yazma bitmeden başarı dönmemeli');
+    assert.equal(storage['x-bellek-v1'].authors.find(a=>a.username==='kalicilik_test').notes[0].text,'Acknowledge only after saving');
   }finally{unlock();writeBarrier=null;}
 });
 test('a failed storage read never initializes or overwrites the saved list',async()=>{
   const before=structuredClone(storage);failRead=true;
   try{
     assert.equal((await call('get')).ok,false);
-    assert.equal((await call('add',{payload:{username:'okuma_hatasi',text:'Kaydedilmemeli'}})).ok,false);
+    assert.equal((await call('add',{payload:{username:'okuma_hatasi',text:'Do not save'}})).ok,false);
     assert.deepEqual(storage,before);
   }finally{failRead=false;}
 });
@@ -61,13 +61,13 @@ test('present but invalid storage is not mistaken for a new empty install',async
       storage={'x-bellek-v1':structuredClone(invalid)};
       const before=structuredClone(storage);
       assert.equal((await call('get')).ok,false,`Invalid record: ${JSON.stringify(invalid)}`);
-      assert.equal((await call('add',{payload:{username:'bozuk_kayit',text:'Üzerine yazılmamalı'}})).ok,false);
+      assert.equal((await call('add',{payload:{username:'bozuk_kayit',text:'Do not overwrite'}})).ok,false);
       assert.deepEqual(storage,before);
     }
   }finally{storage=saved;}
 });
 test('trash updates page counts and a failed permanent delete keeps the stored note',async()=>{
-  let result=await call('add',{payload:{username:'cop_kutusu_test',text:'Silme testi'}});
+  let result=await call('add',{payload:{username:'cop_kutusu_test',text:'Trash test'}});
   let a=result.value.authors.find(a=>a.username==='cop_kutusu_test');let n=a.notes[0];
   result=await call('trash',{payload:{username:a.username,noteId:n.id,expectedVersion:n.version}});assert(result.ok);
   a=result.value.authors.find(a=>a.username==='cop_kutusu_test');n=a.notes[0];

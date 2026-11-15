@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {emptyState,mutate,backup,importBackup,validateBackup,noteStatus} from '../extension/lib/model.js';
 const time='2026-11-02T12:00:00.000Z';
-const add=(state,name='ornek_hesap',text='Korunacak not')=>mutate(state,'add',{username:name,text,tags:'troll, fake'},time);
+const add=(state,name='ornek_hesap',text='Note to keep')=>mutate(state,'add',{username:name,text,tags:'troll, fake'},time);
 const author=(state,name='ornek_hesap')=>state.authors.find(a=>a.username===name);
 const note=(state,name='ornek_hesap')=>author(state,name).notes[0];
 const change=(state,op,n=note(state),name='ornek_hesap',extra={})=>mutate(state,op,{username:name,noteId:n.id,expectedVersion:n.version,...extra},time);
@@ -15,7 +15,7 @@ test('notes without a trash flag remain active or archived',()=>{
 });
 test('trash and recovery retain text, source, history, author tags and original state',()=>{
   let state=add(emptyState());
-  state=change(state,'edit',note(state),'ornek_hesap',{text:'Güncel not',sourceUrl:'https://x.com/ornek_hesap/status/123',sourceTitle:'Kaynak'});
+  state=change(state,'edit',note(state),'ornek_hesap',{text:'Updated note',sourceUrl:'https://x.com/ornek_hesap/status/123',sourceTitle:'Source'});
   const original=structuredClone(state);const n=note(state);
   const trashed=change(state,'trash');
   assert.equal(noteStatus(note(trashed)),'trash');assert.equal(note(trashed).version,n.version+1);
@@ -29,13 +29,13 @@ test('a note deleted from the archive returns to the archive',()=>{
   assert.equal(noteStatus(note(restored)),'archived');assert.equal(note(restored).archivedAt,time);
 });
 test('trash cannot be edited or archived; live notes cannot be permanently deleted',()=>{
-  const live=add(emptyState());assert.throws(()=>change(live,'purge'),/çöp kutusunda değil/);
+  const live=add(emptyState());assert.throws(()=>change(live,'purge'),/not in Trash/);
   const trash=change(live,'trash');const before=structuredClone(trash);
-  for(const op of ['edit','archive','restore','trash'])assert.throws(()=>change(trash,op),/çöp kutusunda/);
+  for(const op of ['edit','archive','restore','trash'])assert.throws(()=>change(trash,op),/Restore this note from Trash/);
   assert.deepEqual(trash,before);
 });
 test('bulk author deletion includes archived notes, leaves previous trash and other authors intact',()=>{
-  let state=add(add(add(emptyState())));state=change(state,'archive');state=change(state,'trash',author(state).notes[1]);state=add(state,'baska_hesap','Ayrı kayıt');
+  let state=add(add(add(emptyState())));state=change(state,'archive');state=change(state,'trash',author(state).notes[1]);state=add(state,'baska_hesap','Separate record');
   const other=structuredClone(author(state,'baska_hesap'));const originalTrash=structuredClone(author(state).notes.find(n=>n.trashedAt));
   const trashed=mutate(state,'trashAuthor',{username:'ornek_hesap',expectedNotes:selection(state)},time);
   assert(author(trashed).notes.every(n=>noteStatus(n)==='trash'));assert.deepEqual(author(trashed).notes.find(n=>n.id===originalTrash.id),originalTrash);assert.deepEqual(author(trashed,'baska_hesap'),other);
@@ -44,9 +44,9 @@ test('bulk author deletion includes archived notes, leaves previous trash and ot
 });
 test('stale bulk selections cannot delete newly added or edited notes',()=>{
   const state=add(emptyState());const expectedNotes=selection(state);const newer=add(state);const saved=structuredClone(newer);
-  assert.throws(()=>mutate(newer,'trashAuthor',{username:'ornek_hesap',expectedNotes}),/başka bir pencerede/);assert.deepEqual(newer,saved);
-  const edited=change(state,'edit',note(state),'ornek_hesap',{text:'Yeni metin'});
-  assert.throws(()=>mutate(edited,'trashAuthor',{username:'ornek_hesap',expectedNotes}),/başka bir pencerede/);
+  assert.throws(()=>mutate(newer,'trashAuthor',{username:'ornek_hesap',expectedNotes}),/changed in another window/);assert.deepEqual(newer,saved);
+  const edited=change(state,'edit',note(state),'ornek_hesap',{text:'New text'});
+  assert.throws(()=>mutate(edited,'trashAuthor',{username:'ornek_hesap',expectedNotes}),/changed in another window/);
 });
 test('permanent deletion removes only the selected trash note; empty authors are removed',()=>{
   const two=add(add(emptyState()));const trash=change(two,'trash');const kept=structuredClone(author(trash).notes[1]);
@@ -56,14 +56,14 @@ test('permanent deletion removes only the selected trash note; empty authors are
 test('emptying trash preserves active/archived notes and rejects stale confirmation',()=>{
   let state=add(add(emptyState()));state=change(state,'trash');state=add(state,'baska_hesap');state=change(state,'trash',note(state,'baska_hesap'),'baska_hesap');
   const kept=structuredClone(author(state).notes.find(n=>!n.trashedAt));
-  const before=structuredClone(state);assert.throws(()=>mutate(state,'emptyTrash',{expectedRevision:state.revision-1}),/başka bir pencerede/);assert.deepEqual(state,before);
+  const before=structuredClone(state);assert.throws(()=>mutate(state,'emptyTrash',{expectedRevision:state.revision-1}),/changed in another window/);assert.deepEqual(state,before);
   const result=mutate(state,'emptyTrash',{expectedRevision:state.revision});assert.equal(result.authors.length,1);assert.deepEqual(author(result).notes,[kept]);
 });
 test('JSON round trip preserves trash and history; repeat import creates no duplicates',()=>{
-  let state=add(emptyState());state=change(state,'edit',note(state),'ornek_hesap',{text:'Düzenlenmiş'});state=change(state,'archive');state=change(state,'trash');
+  let state=add(emptyState());state=change(state,'edit',note(state),'ornek_hesap',{text:'Edited'});state=change(state,'archive');state=change(state,'trash');
   const file=backup(state);assert.equal(file.schemaVersion,1);const imported=importBackup(emptyState(),file).state;
   assert.deepEqual(author(imported).notes,author(state).notes);assert.equal(importBackup(imported,file).report.newNotes,0);
-  const bad=structuredClone(file);bad.authors[0].notes[0].trashedAt='bozuk tarih';assert.throws(()=>validateBackup(bad));
+  const bad=structuredClone(file);bad.authors[0].notes[0].trashedAt='invalid date';assert.throws(()=>validateBackup(bad));
   assert.throws(()=>validateBackup({...file,schemaVersion:3}));
 });
 test('import preview exposes trash/live conflicts and skip preserves the deletion',()=>{

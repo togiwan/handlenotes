@@ -6,7 +6,7 @@ from pathlib import Path
 root = Path(__file__).resolve().parents[1]
 source = root / "extension"
 version = json.loads((source / "manifest.json").read_text())["version"]
-target = root / "dist" / f"xbellek-{version}.zip"
+target = root / "dist" / f"handlenotes-{version}.zip"
 target.parent.mkdir(exist_ok=True)
 with zipfile.ZipFile(target, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=9) as archive:
     for path in sorted(source.rglob("*")):

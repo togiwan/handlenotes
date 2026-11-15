@@ -1,27 +1,27 @@
-# XBellek
+# HandleNotes — Private Notes for X
 
-XBellek, X’te karşılaştığın hesaplara kişisel not bırakmak için bir Chrome eklentisidir. EkşiBellek’ten uyarlanan defter, aynı X hesabıyla yeniden karşılaştığında etkin not sayısını adının başındaki düğmede gösterir. Bir hesaba birden fazla not ekleyebilir, gönderi bağlantısı saklayabilir ve notları etiketleyebilir, arşivleyebilir ya da çöp kutusuna taşıyabilirsin.
+HandleNotes is a Chrome extension for leaving private notes on accounts you see on X. The note button sits beside the account name and shows how many active notes you’ve saved. Keep multiple notes per account, link back to posts, add tags, and organize notes in the archive or Trash.
 
-## Yerel kurulum
+## Install locally
 
-1. Chrome’da `chrome://extensions` adresini aç.
-2. **Geliştirici modu**nu açıp **Paketlenmemiş öğe yükle**yi seç.
-3. Bu projenin `extension` klasörünü seç ve açık X sekmelerini yenile.
-4. X’te bir hesabın yanındaki not düğmesini veya araç çubuğundaki XBellek simgesini kullan.
+1. Open `chrome://extensions` in Chrome.
+2. Turn on **Developer mode** and select **Load unpacked**.
+3. Select this project’s `extension` folder and refresh your open X tabs.
+4. Use the note button beside an account on X or open HandleNotes from the Chrome toolbar.
 
-## Notlarını yönet
+## Use HandleNotes
 
-- Not düğmesi, algılanan gönderi yazarı veya profil için defteri açar. Gönderi bağlantısı sayfadan doğrulanabildiğinde forma eklenir.
-- Araç çubuğundaki **Not ekle** sekmesinde `@kullanıcıadı` yazarak bir hesap için not oluşturabilirsin.
-- **Hesaplar** sekmesinden notlarını ara, geçmiş sürümleri görüntüle, arşivi ve çöp kutusunu yönet.
-- **Yedekleme** sekmesinde arşiv, çöp kutusu ve geçmişi içeren bir JSON dosyası indirebilir ve daha sonra önizleyerek içe aktarabilirsin.
+- Open the note button on a supported post or profile. HandleNotes fills in the post URL when it can identify the source.
+- To add a note manually, open **Add note** and enter the account’s `@username`.
+- Open **Accounts** to search notes, view edit history, or manage archived and deleted notes.
+- Use **Backup** to download a JSON copy of your notes, including edit history, the archive, and Trash. You can preview a backup before importing it.
 
-İlk sürüm hesapları X kullanıcı adına göre eşleştirir. Kullanıcı adı değiştiğinde eski adla kaydedilen notlar yeni ada otomatik taşınmaz. Eski ad başka bir hesaba verilirse düğme o adla saklanmış notları gösterebilir. Notları gerektiğinde **Hesaplar** sekmesinden eski adla bulabilirsin.
+HandleNotes matches accounts by their X username. If someone changes their username, find your notes under their previous handle in **Accounts**. If X reassigns an old handle, its button can still show notes associated with that handle.
 
-XBellek ayrı bir [yedek biçimi ve yerel depolama alanı](PRIVACY.md) kullanır. X’in API’sine, haricî bir sunucuya veya bir eklenti hesabına ihtiyaç duymaz. Chrome profilini silmeden veya eklentiyi kaldırmadan önce JSON yedeğini al.
+Your notes stay in your Chrome profile. HandleNotes needs no extension account, server, or X API access. Export a backup before removing the extension or deleting your Chrome profile. [How HandleNotes handles your data](PRIVACY.md)
 
-## Geliştirme
+## Development
 
-Node.js ve Python 3 ile `npm test`, `npm run check` ve `npm run package` komutlarını çalıştır. Paket `dist/` altında oluşur.
+Use Node.js and Python 3 to run `npm test`, `npm run check`, and `npm run package`. The ZIP is created in `dist/`. To regenerate the icons, run `python3 scripts/generate-icons.py`.
 
-XBellek, X ile bağlantısı olmayan bağımsız bir projedir. [MIT lisansı](LICENSE).
+HandleNotes was adapted from EkşiBellek. It is an independent project and is not affiliated with X. [MIT license](LICENSE)
