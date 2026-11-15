@@ -5,7 +5,8 @@
   const profilePath = new RegExp('^/(' + handlePattern + ')/?$');
   const profileRoute = new RegExp('^/(' + handlePattern + ')(?:/(?:with_replies|media|highlights|articles|likes))?/?$');
   const postPath = new RegExp('^/(' + handlePattern + ')/status/(\\d+)/?$');
-  const postSelector = 'article[data-testid="tweet"]';
+  // Public X pages use plain articles with a dedicated post avatar.
+  const postSelector = 'article[data-testid="tweet"], main article:has([data-post-avatar="true"])';
   const colors = {
     green: ['#34784b', '#edf5ed'], blue: ['#3e6999', '#edf3fb'],
     amber: ['#946c2d', '#fbf3e4'], rose: ['#a44f6a', '#fbedf1'],
@@ -36,12 +37,12 @@
     const found = new Map();
     for (const post of document.querySelectorAll(postSelector)) {
       if (post.parentElement?.closest(postSelector)) continue;
-      const header = post.querySelector('[data-testid="User-Name"]');
-      if (header?.closest(postSelector) !== post) continue;
+      const header = post.querySelector('[data-testid="User-Name"], [class~="@container/post-actions"]');
+      if (header?.closest('article') !== post) continue;
       const links = [...header.querySelectorAll('a[href]')].map(link => ({ link, path: linkPath(link) }));
       const profiles = links.flatMap(({link, path}) => {
         const name = profilePath.exec(path)?.[1].toLowerCase();
-        return name ? [{ link, name }] : [];
+        return name && link.textContent.trim() ? [{ link, name }] : [];
       });
       const account = profiles.find(({link,name}) => link.textContent.trim().toLowerCase() === '@' + name)
         || profiles.find(({name}) => handleSpan(header, name));
@@ -57,8 +58,10 @@
       });
     }
     const profile = profileRoute.exec(location.pathname)?.[1].toLowerCase();
-    const header = document.querySelector('main [data-testid="UserName"]');
-    if (profile && header && !header.closest(postSelector)) {
+    const main = document.querySelector('main');
+    // The public profile places the handle beside the wrapper of its display-name heading.
+    const header = main?.querySelector('[data-testid="UserName"]') ?? main?.querySelector('h1')?.parentElement?.parentElement;
+    if (profile && header && !header.closest('article')) {
       const slot = handleSpan(header, profile);
       if (slot) found.set(slot.closest('a[href]') || slot, { username: profile });
     }
@@ -242,7 +245,7 @@
     if (records.some(record => record.type !== 'childList' ||
         [...record.addedNodes, ...record.removedNodes].some(node => !ownTags.includes(node.tagName)))) schedule();
   });
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['href', 'data-testid'] });
+  observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['href', 'data-testid', 'data-post-avatar'] });
 
   chrome.runtime.onMessage.addListener((message, sender, respond) => {
     if (sender.id !== chrome.runtime.id || message?.channel !== channel || message.op !== 'pageAuthors') return;
