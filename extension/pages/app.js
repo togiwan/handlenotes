@@ -8,6 +8,7 @@ document.body.className = panel ? 'panel' : popup ? 'popup' : '';
 const root = document.querySelector('#app');
 const { name, short_name: shortName } = chrome.runtime.getManifest();
 const appName = shortName || name;
+const SUPPORT_ADDRESS = 'TFkvdWvfMF7sPuLaC7ejkdyCmzWiJJ4Aeq';
 let state;
 let view = panel ? 'author' : params.get('view') === 'trash' ? params.get('view') : popup ? 'add' : 'library';
 let selected = null;
@@ -85,6 +86,7 @@ function head(title, description = '', action = null) {
 }
 function render() {
   document.body.dataset.view=view;
+  const menuView = view === 'support' ? 'settings' : view;
   root.replaceChildren();
   const main = el('main', 'main');
   if (panel || popup) {
@@ -95,13 +97,13 @@ function render() {
     root.append(el('header', 'compact-header', brand(), actions));
     if (popup) {
       const nav = el('nav', 'compact-nav'); nav.setAttribute('aria-label', `${appName} menu`);
-      for (const [key, label] of [['add','Add note'],['library','Accounts'],['backup','Backup'],['settings','Settings']]) nav.append(button(label, () => navigate(key), view === key || (key==='library' && ['author','trash'].includes(view)) ? 'active' : ''));
+      for (const [key, label] of [['add','Add note'],['library','Accounts'],['backup','Backup'],['settings','Settings']]) nav.append(button(label, () => navigate(key), menuView === key || (key==='library' && ['author','trash'].includes(view)) ? 'active' : ''));
       root.append(nav);
     }
     root.append(main);
   } else {
     const nav = el('nav', 'nav'); nav.setAttribute('aria-label', `${appName} menu`);
-    for (const [key, label, symbol] of [['library','Saved accounts','users'],['add','Add note','plus'],['trash','Trash','trash'],['backup','Backup','backup'],['settings','Settings','settings']]) nav.append(button(label, () => navigate(key), view === key ? 'active' : '', symbol));
+    for (const [key, label, symbol] of [['library','Saved accounts','users'],['add','Add note','plus'],['trash','Trash','trash'],['backup','Backup','backup'],['settings','Settings','settings']]) nav.append(button(label, () => navigate(key), menuView === key ? 'active' : '', symbol));
     const aside = el('aside', 'sidebar', brand(), nav, el('div', 'side-bottom', el('div', 'local', 'Stored in this browser'), el('p', 'hint', 'An independent extension for X.')));
     root.append(el('div', 'shell', aside, main));
   }
@@ -118,6 +120,7 @@ function render() {
     else { main.append(head(ref ? `@${ref.username}` : 'Account', 'Add your first note for this account.')); main.append(noteForm({ ...ref, ...sourceRef() }, null, true)); }
   } else if (view === 'backup') renderBackup(main);
   else if (view === 'settings') renderSettings(main);
+  else if (view === 'support') renderSupport(main);
   reportFrameSize();
 }
 function trashCount() { return state.authors.reduce((sum, a) => sum + a.notes.filter(n => noteStatus(n) === 'trash').length, 0); }
@@ -316,8 +319,43 @@ function renderSettings(main) {
   const reminders=el('input');reminders.type='checkbox';reminders.checked=state.settings.reminders;
   const error=el('p','error');
   main.append(el('section','section',el('h2','','Appearance and reminders'),field('Theme',theme),el('label','check-label',reminders,'Remind me to back up after changes'),el('div','actions',button('Save settings',async()=>{try{await commit('settings',{theme:theme.value,reminders:reminders.checked});render();toast('Settings saved.');}catch(e){error.textContent=e.message;}},'')),error));
+  main.append(el('section', 'section',
+    el('h2', '', 'Support HandleNotes'),
+    el('p', '', 'HandleNotes is free. Donations are optional.'),
+    button('Donation options', () => navigate('support'))
+  ));
   main.append(el('section','section',el('h2','','Your notes stay in Chrome'),el('p','','Notes, usernames, tags, links, and drafts are stored in this Chrome profile. HandleNotes does not send your notes to a server.'),el('p','','On X, notes open in an extension frame. External links open when you click them.'),el('p','hint',`${appName} ${chrome.runtime.getManifest().version} · Open source · MIT license\nIndependent of X.`)));
 }
+function renderSupport(main) {
+  main.append(
+    button('Back to settings', () => navigate('settings'), 'ghost support-back'),
+    head('Support HandleNotes', 'Make a voluntary donation on the TRON network.')
+  );
+  const wallets = el('div', 'support-wallets');
+  for (const [symbol, name, network] of [['TRX', 'TRON', 'TRON'], ['USDT', 'Tether', 'TRON (TRC20)']]) {
+    const copy = button('Copy', async () => {
+      try {
+        await navigator.clipboard.writeText(SUPPORT_ADDRESS);
+        toast(symbol + ' address copied.');
+      } catch {
+        toast('Could not copy the address. Select it to copy it manually.');
+      }
+    });
+    copy.setAttribute('aria-label', 'Copy ' + symbol + ' address');
+    wallets.append(el('section', 'section wallet-card',
+      el('div', 'wallet-header',
+        el('div', '', el('h2', '', symbol), el('span', 'hint', name)),
+        el('span', 'wallet-network', network)
+      ),
+      el('div', 'wallet-address',
+        el('div', '', el('div', 'hint', 'Recipient address'), el('code', '', SUPPORT_ADDRESS)),
+        copy
+      )
+    ));
+  }
+  main.append(wallets, el('p', 'hint', 'Both options use the same address. Choose the listed network in your wallet.'));
+}
+
 function connect() {
   try {
     const port=chrome.runtime.connect({name:'x-bellek-updates'});

@@ -240,3 +240,12 @@ body:not(.popup):not(.panel)[data-view=add] .main { max-width: 712px; }
 .popup[data-view=trash] .page-head > .btn { max-width: 156px; white-space: normal; min-height: 34px; font-size: 10px; }
 .btn.secondary.danger { background: var(--surface); border-color: var(--line); color: var(--danger); }
 .btn.ghost.danger { color: var(--danger); }
+
+.support-back { padding-left: 0; margin-bottom: 12px; color: var(--accent); }
+.support-wallets { display: grid; gap: 12px; max-width: 540px; margin-bottom: 14px; }
+.wallet-card { margin: 0; padding: 16px; }
+.wallet-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.wallet-header h2 { margin-bottom: 0; }
+.wallet-network { padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11px; }
+.wallet-address { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; margin-top: 12px; }
+.wallet-address code { display: block; font: 12px/1.6 ui-monospace, monospace; overflow-wrap: anywhere; user-select: text; }

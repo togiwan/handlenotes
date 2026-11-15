@@ -24,6 +24,10 @@ HandleNotes matches accounts by their X username. If someone changes their usern
 
 Your notes stay in your Chrome profile. HandleNotes needs no extension account, server, or X API access. Export a backup before removing the extension or deleting your Chrome profile. [How HandleNotes handles your data](PRIVACY.md)
 
+## Support
+
+HandleNotes is free. If you’d like to support its development, open **Settings → Donation options** for the TRX and USDT addresses on TRON.
+
 ## Development
 
 Use Node.js and Python 3 to run `npm test`, `npm run check`, and `npm run package`. The ZIP is created in `dist/`. To regenerate the icons, run `python3 scripts/generate-icons.py`.
