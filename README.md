@@ -20,9 +20,15 @@ The screenshot shows HandleNotes on a public NASA post with a sample note. [View
 - Open **Accounts** to search notes, view edit history, or manage archived and deleted notes.
 - Use **Backup** to download a JSON copy of your notes, including edit history, the archive, and Trash. You can preview a backup before importing it.
 
-HandleNotes matches accounts by their X username. If someone changes their username, find your notes under their previous handle in **Accounts**. If X reassigns an old handle, its button can still show notes associated with that handle.
+HandleNotes matches accounts by their X username. If someone changes their username, their notes stay under the previous handle in **Accounts** until you move them. If X reassigns an old handle, its button can still show notes associated with that handle.
 
 Your notes stay in your Chrome profile. HandleNotes needs no extension account, server, or X API access. Export a backup before removing the extension or deleting your Chrome profile. [How HandleNotes handles your data](PRIVACY.md)
+
+## Move notes after a handle change
+
+In **Accounts**, open the old handle and choose **Move notes to another handle**. Enter the new handle and review the counts for active, archived, and deleted notes. If the destination already exists, choose **Merge notes** only if both handles belong to the same account. Both sets of notes are kept, tags are combined up to the 12-tag limit, and the destination keeps its badge color.
+
+Each note keeps its original handle, saved date, post link, and edit history. You can search for moved notes by their original handle. Backups with moved notes use format version 2 and require HandleNotes 0.1.4 or later. Older backups can still be imported.
 
 ## Support
 

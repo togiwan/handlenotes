@@ -79,3 +79,30 @@ test('trash updates page counts and a failed permanent delete keeps the stored n
   result=await call('untrash',{payload:{username:a.username,noteId:n.id,expectedVersion:n.version}});assert(result.ok);
   assert.equal((await call('lookup',{authors:[{username:a.username}]},content)).value[0].count,1);
 });
+
+test('a trusted move previews and writes atomically without exposing notes to page scripts', async () => {
+  const added = await call('add', {payload: {username: 'renamed_old', text: 'Keep this note'}});
+  assert(added.ok);
+  const account = added.value.authors.find(record => record.username === 'renamed_old');
+  const payload = {accountKey: account.key, targetUsername: 'renamed_new'};
+  const content = {id: 'test', url: 'https://x.com/home'};
+  assert.equal((await call('previewMove', {payload}, content)).ok, false);
+  const preview = await call('previewMove', {payload});
+  assert(preview.ok);
+  assert.equal(preview.value.sourceCounts.active, 1);
+  const confirmation = {...payload, expectedRevision: preview.value.revision, merge: false};
+  assert.equal((await call('moveNotes', {payload: confirmation}, content)).ok, false);
+  const before = structuredClone(storage);
+  failWrite = true;
+  try {
+    assert.equal((await call('moveNotes', {payload: confirmation})).ok, false);
+    assert.deepEqual(storage, before);
+  } finally {
+    failWrite = false;
+  }
+  assert((await call('moveNotes', {payload: confirmation})).ok);
+  const authors = ['renamed_old', 'renamed_new'].map(username => ({username}));
+  const lookup = await call('lookup', {authors}, content);
+  assert.deepEqual(lookup.value.map(record => record.count), [0, 1]);
+  assert.equal(storage['x-bellek-v1'].authors.find(record => record.username === 'renamed_new').notes[0].savedHandle, 'renamed_old');
+});

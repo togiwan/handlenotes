@@ -95,6 +95,9 @@ input::file-selector-button { font: 600 11px -apple-system, BlinkMacSystemFont, 
 .note-meta { display: flex; gap: 12px; justify-content: space-between; color: var(--muted); font-size: 10px; margin-bottom: 10px; line-height: 1.5; }
 .note-source { font-size: 11px; display: inline-block; margin: 10px 0 2px; max-width: 100%; text-decoration: none; }
 .note-source:hover { text-decoration: underline; }
+.note-context { display: flex; gap: 4px 8px; flex-wrap: wrap; align-items: baseline; margin-top: 9px; color: var(--muted); font-size: 11px; }
+.note-context .note-source { margin: 0; }
+.note-context > * + *::before { content: '·'; color: var(--subtle); margin-right: 8px; }
 .note-actions { display: flex; gap: 3px; margin: 10px -8px -4px; flex-wrap: wrap; }
 .note-actions button { font-size: 11px; }
 .empty { text-align: center; padding: 42px 24px; background: var(--surface); border: 1px dashed var(--line); border-radius: var(--radius); }
@@ -249,3 +252,10 @@ body:not(.popup):not(.panel)[data-view=add] .main { max-width: 712px; }
 .wallet-network { padding: 4px 8px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11px; }
 .wallet-address { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: end; gap: 12px; margin-top: 12px; }
 .wallet-address code { display: block; font: 12px/1.6 ui-monospace, monospace; overflow-wrap: anywhere; user-select: text; }
+
+.move-account-link { margin: 0 0 4px -8px; }
+.move-preview { margin-top: 16px; font-size: 12px; }
+.move-preview:empty { display: none; }
+.move-preview h2 { font-size: 16px; overflow-wrap: anywhere; }
+.move-preview p { margin: 5px 0; color: var(--muted); }
+.move-preview .actions { margin-top: 14px; }

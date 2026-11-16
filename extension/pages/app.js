@@ -17,6 +17,7 @@ let editing = false, working = false, refreshPending = false;
 let draft = {};
 let pageAuthors = [];
 let preview = null;
+let moveTarget = '';
 let toastTimer;
 let sizeFrame = 0, lastFrameHeight = 0;
 function reportFrameSize() {
@@ -86,7 +87,7 @@ function head(title, description = '', action = null) {
 }
 function render() {
   document.body.dataset.view=view;
-  const menuView = view === 'support' ? 'settings' : view;
+  const menuView = view === 'support' ? 'settings' : view === 'move' ? 'library' : view;
   root.replaceChildren();
   const main = el('main', 'main');
   if (panel || popup) {
@@ -118,7 +119,8 @@ function render() {
     const author = ref ? resolveAuthor(state, ref.username) : null;
     if (author) { selected = author.key; main.append(authorDetail(author)); }
     else { main.append(head(ref ? `@${ref.username}` : 'Account', 'Add your first note for this account.')); main.append(noteForm({ ...ref, ...sourceRef() }, null, true)); }
-  } else if (view === 'backup') renderBackup(main);
+  } else if (view === 'move') renderMove(main);
+  else if (view === 'backup') renderBackup(main);
   else if (view === 'settings') renderSettings(main);
   else if (view === 'support') renderSupport(main);
   reportFrameSize();
@@ -160,7 +162,16 @@ function renderLibrary(main, trash = false) {
   const results = el('div'); main.append(results);
   function draw() {
     const needle = query.toLowerCase();
-    const authors = state.authors.filter(a => a.notes.some(inScope) && (!tagFilter || a.tags.includes(tagFilter)) && (`@${a.username}`.includes(needle) || [...a.tags, ...a.notes.filter(inScope).map(n => n.text)].join(' ').toLowerCase().includes(needle))).sort((a,b) => sort === 'name' ? a.username.localeCompare(b.username,'en') : Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
+    const authors = state.authors.filter(author => {
+      const notes = author.notes.filter(inScope);
+      if (!notes.length || (tagFilter && !author.tags.includes(tagFilter))) return false;
+      const terms = [`@${author.username}`, ...author.tags];
+      for (const note of notes) {
+        terms.push(note.text);
+        if (note.savedHandle) terms.push(`@${note.savedHandle}`);
+      }
+      return terms.join(' ').toLowerCase().includes(needle);
+    }).sort((a,b) => sort === 'name' ? a.username.localeCompare(b.username,'en') : Date.parse(b.updatedAt) - Date.parse(a.updatedAt));
     results.replaceChildren();
     if (!authors.length) {
       if (trash && !count) results.append(empty('Trash is empty', 'Notes you move to Trash will appear here.', 'Back to accounts', () => navigate('library')));
@@ -211,12 +222,33 @@ function authorDetail(author) {
   const detail=el('section',`detail color-${author.color}`);
   const add=trash?null:button('Add note',()=>{detail.replaceChildren(head(author.username,'Write a note for this account.'),noteForm({...author,...(panel?sourceRef():{})},null,true));},'secondary','plus');
   detail.append(el('div','detail-head',el('div','',el('h2','',`@${author.username}`),link('Open X profile ↗',`https://x.com/${author.username}`),tagList(author.tags)),add));
+  if (!panel && author.notes.length) {
+    detail.append(button('Move notes to another handle', () => {
+      moveTarget = '';
+      navigate('move', author);
+      root.querySelector('[name="targetUsername"]')?.focus();
+    }, 'ghost move-account-link'));
+  }
   const notes=author.notes.filter(inScope).sort((a,b)=>Date.parse(trash?b.trashedAt:b.createdAt)-Date.parse(trash?a.trashedAt:a.createdAt));
   if(!notes.length){detail.append(el('p','hint','No notes in this view. Check the archive or Trash.'));if(!trash&&author.notes.some(n=>n.trashedAt))detail.append(button('Open Trash',openTrash,'ghost','trash'));}
   for(const note of notes){
     const card=el('article','note');
-    card.append(el('div','note-meta',el('span','',trash?`Deleted ${formatDate(note.trashedAt)}`:formatDate(note.createdAt)),el('span','',trash?(note.archivedAt?'Previously archived':''):(note.history.length?'Edited':''))),el('p','note-text',note.text));
-    if(note.sourceUrl)card.append(link(note.sourceTitle||'Open post ↗',note.sourceUrl,'note-source'));
+    if (trash) {
+      card.append(el('div', 'note-meta',
+        el('span', '', `Deleted ${formatDate(note.trashedAt)}`),
+        note.archivedAt ? el('span', '', 'Previously archived') : null));
+    } else if (note.history.length) {
+      card.append(el('div', 'note-meta', 'Edited'));
+    }
+    const savedHandle = note.savedHandle ?? author.username;
+    const savedDate = el('time', '', `Saved ${formatDate(note.createdAt)}`);
+    savedDate.dateTime = note.createdAt;
+    const context = el('div', 'note-context', el('span', '', `@${savedHandle}`), savedDate);
+    if (note.sourceUrl) {
+      const customLabel = note.sourceTitle && note.sourceTitle !== `@${savedHandle} · X post`;
+      context.append(link(customLabel ? note.sourceTitle : 'Open post ↗', note.sourceUrl, 'note-source'));
+    }
+    card.append(el('p', 'note-text', note.text), context);
     const actions=el('div','note-actions');
     if(trash){
       actions.append(button('Restore',()=>changeNote(author,note,'untrash'),'ghost'),button('Delete permanently',()=>changeNote(author,note,'purge'),'ghost danger'));
@@ -240,6 +272,96 @@ function authorDetail(author) {
     if(author.notes.some(n=>!n.trashedAt))detail.append(el('div','author-danger-zone',button('Move all notes to Trash',()=>changeAuthor(author,'trashAuthor'),'ghost danger','trash')));
   }
   return detail;
+}
+function renderMove(main) {
+  const back = () => {
+    view = popup && getSelected() ? 'author' : scope === 'trash' ? 'trash' : 'library';
+    render();
+  };
+  main.append(button('Back to account', back, 'ghost back-link'));
+  const author = getSelected();
+  if (!author) {
+    main.append(head('Account changed', 'Open its latest notes in Accounts and try again.'));
+    return;
+  }
+  main.append(head('Move notes to another handle', `Move all notes from @${author.username}.`));
+  const form = el('form', 'form-surface move-form');
+  const input = el('input');
+  input.name = 'targetUsername';
+  input.placeholder = '@newhandle';
+  input.value = moveTarget;
+  input.maxLength = 16;
+  input.required = true;
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+
+  const review = el('button', 'btn', 'Review move');
+  review.type = 'submit';
+  const previewBox = el('div', 'move-preview');
+  previewBox.setAttribute('aria-live', 'polite');
+  const error = el('p', 'error');
+  error.setAttribute('role', 'alert');
+  form.append(field('New X username', input), review, previewBox, error);
+  main.append(form);
+
+  const describeCounts = ({ active, archived, trash }) => `${active} active · ${archived} archived · ${trash} in Trash`;
+  const resetPreview = () => {
+    previewBox.replaceChildren();
+    error.textContent = '';
+  };
+  input.addEventListener('input', () => {
+    moveTarget = input.value;
+    resetPreview();
+  });
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    if (review.disabled) return;
+    review.disabled = input.disabled = true;
+    resetPreview();
+    const payload = { accountKey: author.key, targetUsername: input.value };
+    try {
+      const result = await rpc('previewMove', { payload });
+      if (!form.isConnected) return;
+      const merge = Boolean(result.targetCounts);
+      previewBox.append(
+        el('h2', '', `@${result.sourceUsername} → @${result.targetUsername}`),
+        el('p', '', `Moving ${describeCounts(result.sourceCounts)}`)
+      );
+      if (merge) previewBox.append(el('p', '', `Already at @${result.targetUsername} · ${describeCounts(result.targetCounts)}`));
+      previewBox.append(link(`Check @${result.targetUsername} on X ↗`, `https://x.com/${result.targetUsername}`));
+      if (!result.canMerge) {
+        error.textContent = 'Combining tags would exceed the 12-tag limit. Remove some account tags first.';
+        return;
+      }
+      if (merge) previewBox.append(el('p', '', 'Merge only if both handles belong to the same account.'));
+      const confirmMove = button(merge ? 'Merge notes' : 'Move notes', async () => {
+        confirmMove.disabled = review.disabled = input.disabled = true;
+        try {
+          await commit('moveNotes', {
+            accountKey: author.key,
+            targetUsername: result.targetUsername,
+            expectedRevision: result.revision,
+            merge
+          });
+          if (!form.isConnected) return;
+          selected = resolveAuthor(state, result.targetUsername)?.key ?? null;
+          query = tagFilter = '';
+          back();
+          toast(`Notes moved to @${result.targetUsername}.`);
+        } catch (e) {
+          previewBox.replaceChildren();
+          error.textContent = e.message;
+          review.disabled = input.disabled = false;
+        }
+      }, '');
+      previewBox.append(el('div', 'actions', confirmMove));
+    } catch (e) {
+      error.textContent = e.message;
+    } finally {
+      review.disabled = input.disabled = false;
+    }
+  });
 }
 function field(title, input, hint='') { if(!input.hasAttribute('aria-label'))input.setAttribute('aria-label',title);return el('label','field',el('span','field-title',title),input,hint?el('span','hint',hint):null); }
 function colorSelect(value='green') { const select=el('select');for(const [v,t]of [['green','Green'],['blue','Blue'],['amber','Amber'],['rose','Rose'],['slate','Slate']]){const o=el('option','',t);o.value=v;select.append(o);}select.value=value;return select; }

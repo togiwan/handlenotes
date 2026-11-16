@@ -1,4 +1,4 @@
-import { emptyState, mutate, resolveAuthor, importBackup, noteStatus, MAX_IMPORT_BYTES } from './lib/model.js';
+import { emptyState, mutate, resolveAuthor, importBackup, previewMove, noteStatus, MAX_IMPORT_BYTES } from './lib/model.js';
 
 const KEY = 'x-bellek-v1';
 const ports = new Set();
@@ -48,6 +48,7 @@ async function handle(message, sender) {
   if (!trusted(sender)) throw new Error('You can only do this from the extension.');
   const state = await read();
   if (message.op === 'get') return state;
+  if (message.op === 'previewMove') return previewMove(state, message.payload || {});
   let next;
   let result = null;
   if (message.op === 'import' || message.op === 'previewImport') {
